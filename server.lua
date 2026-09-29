@@ -102,6 +102,28 @@ local function printMessage(target, message)
 	end
 end
 
+local function isWeatherAdmin(source)
+	if not source or source == 0 then
+		return true
+	end
+
+	return IsPlayerAceAllowed(source, "command.weather")
+		or IsPlayerAceAllowed(source, "command.weatherui")
+		or IsPlayerAceAllowed(source, "command.time")
+		or IsPlayerAceAllowed(source, "command.wind")
+		or IsPlayerAceAllowed(source, "command.syncdelay")
+		or IsPlayerAceAllowed(source, "command.timescale")
+end
+
+local function denyWeatherAdmin(source)
+	if isWeatherAdmin(source) then
+		return false
+	end
+
+	printMessage(source, { color = { 255, 0, 0 }, args = { "Error", "You do not have permission to change weather or time." } })
+	return true
+end
+
 local function setWeather(weather, transition, freeze, permSnow)
 	TriggerClientEvent("weathersync:changeWeather", -1, weather, transition, permSnow)
 	currentWeather = weather
@@ -271,24 +293,61 @@ exports("setSyncDelay", setSyncDelay)
 exports("resetSyncDelay", resetSyncDelay)
 exports("getForecast", createForecast)
 
-AddEventHandler("weathersync:setWeather", setWeather)
-AddEventHandler("weathersync:resetWeather", resetWeather)
-AddEventHandler("weathersync:setWeatherPattern", setWeatherPattern)
-AddEventHandler("weathersync:resetWeatherPattern", resetWeatherPattern)
-AddEventHandler("weathersync:setTime", setTime)
-AddEventHandler("weathersync:resetTime", resetTime)
-AddEventHandler("weathersync:setTimescale", setTimescale)
-AddEventHandler("weathersync:resetTimescale", resetTimescale)
-AddEventHandler("weathersync:setSyncDelay", setSyncDelay)
-AddEventHandler("weathersync:resetSyncDelay", resetSyncDelay)
-AddEventHandler("weathersync:setWind", setWind)
-AddEventHandler("weathersync:resetWind", resetWind)
+AddEventHandler("weathersync:setWeather", function(weather, transition, freeze, permSnow)
+	if denyWeatherAdmin(source) then return end
+	setWeather(weather, transition, freeze, permSnow)
+end)
+AddEventHandler("weathersync:resetWeather", function()
+	if denyWeatherAdmin(source) then return end
+	resetWeather()
+end)
+AddEventHandler("weathersync:setWeatherPattern", function(pattern)
+	if denyWeatherAdmin(source) then return end
+	setWeatherPattern(pattern)
+end)
+AddEventHandler("weathersync:resetWeatherPattern", function()
+	if denyWeatherAdmin(source) then return end
+	resetWeatherPattern()
+end)
+AddEventHandler("weathersync:setTime", function(d, h, m, s, t, f)
+	if denyWeatherAdmin(source) then return end
+	setTime(d, h, m, s, t, f)
+end)
+AddEventHandler("weathersync:resetTime", function()
+	if denyWeatherAdmin(source) then return end
+	resetTime()
+end)
+AddEventHandler("weathersync:setTimescale", function(scale)
+	if denyWeatherAdmin(source) then return end
+	setTimescale(scale)
+end)
+AddEventHandler("weathersync:resetTimescale", function()
+	if denyWeatherAdmin(source) then return end
+	resetTimescale()
+end)
+AddEventHandler("weathersync:setSyncDelay", function(delay)
+	if denyWeatherAdmin(source) then return end
+	setSyncDelay(delay)
+end)
+AddEventHandler("weathersync:resetSyncDelay", function()
+	if denyWeatherAdmin(source) then return end
+	resetSyncDelay()
+end)
+AddEventHandler("weathersync:setWind", function(direction, speed, frozen)
+	if denyWeatherAdmin(source) then return end
+	setWind(direction, speed, frozen)
+end)
+AddEventHandler("weathersync:resetWind", function()
+	if denyWeatherAdmin(source) then return end
+	resetWind()
+end)
 
 AddEventHandler("weathersync:requestUpdatedForecast", function()
 	TriggerClientEvent("weathersync:updateForecast", source, createForecast())
 end)
 
 AddEventHandler("weathersync:requestUpdatedAdminUi", function()
+	if denyWeatherAdmin(source) then return end
 	TriggerClientEvent("weathersync:updateAdminUi", source, currentWeather, currentTime, currentTimescale, currentWindDirection, currentWindSpeed, syncDelay)
 end)
 
@@ -297,6 +356,10 @@ AddEventHandler("weathersync:init", function()
 	syncWeather(source)
 	syncWind(source)
 	syncTimescale(source)
+
+	if isWeatherAdmin(source) then
+		TriggerClientEvent("weathersync:registerAdminSuggestions", source)
+	end
 end)
 
 RegisterCommand("weather", function(source, args, raw)
@@ -373,14 +436,17 @@ RegisterCommand("forecast", function(source, args, raw)
 end, true)
 
 RegisterCommand("weatherui", function(source, args, raw)
+	if denyWeatherAdmin(source) then return end
 	TriggerClientEvent("weathersync:openAdminUi", source)
 end, true)
 
 RegisterCommand("weathersync", function(source, args, raw)
+	if denyWeatherAdmin(source) then return end
 	TriggerClientEvent("weathersync:toggleSync", source)
 end, true)
 
 RegisterCommand("mytime", function(source, args, raw)
+	if denyWeatherAdmin(source) then return end
 	local h = (args[1] and tonumber(args[1]) or 0)
 	local m = (args[2] and tonumber(args[2]) or 0)
 	local s = (args[3] and tonumber(args[3]) or 0)
@@ -389,6 +455,7 @@ RegisterCommand("mytime", function(source, args, raw)
 end, true)
 
 RegisterCommand("myweather", function(source, args, raw)
+	if denyWeatherAdmin(source) then return end
 	local weather = (args[1] and args[1] or currentWeather)
 	local transition = (args[2] and tonumber(args[2]) or 5.0)
 	local permanentSnow = args[3] == "1"

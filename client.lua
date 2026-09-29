@@ -461,11 +461,9 @@ AddEventHandler("weathersync:toggleSync", toggleSync)
 AddEventHandler("weathersync:setMyWeather", setMyWeather)
 AddEventHandler("weathersync:setMyTime", setMyTime)
 
-Citizen.CreateThread(function()
-	SetNuiFocus(false, false)
+RegisterNetEvent("weathersync:registerAdminSuggestions")
 
-	TriggerEvent("chat:addSuggestion", "/forecast", "Toggle display of weather forecast", {})
-
+AddEventHandler("weathersync:registerAdminSuggestions", function()
 	TriggerEvent("chat:addSuggestion", "/syncdelay", "Change how often time/weather are synced.", {
 		{name = "delay", help = "The time in milliseconds between syncs"}
 	})
@@ -512,6 +510,12 @@ Citizen.CreateThread(function()
 		{name = "transition", help = "Transition time in seconds"},
 		{name = "snow", help = "0 = no snow on ground, 1 = snow on ground"}
 	})
+end)
+
+Citizen.CreateThread(function()
+	SetNuiFocus(false, false)
+
+	TriggerEvent("chat:addSuggestion", "/forecast", "Toggle display of weather forecast", {})
 
 	TriggerServerEvent("weathersync:init")
 end)
